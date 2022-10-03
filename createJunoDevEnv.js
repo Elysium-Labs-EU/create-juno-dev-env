@@ -11,6 +11,7 @@ const fs = require('fs-extra');
 // const prompts = require('prompts');
 const os = require('os');
 const path = require('path');
+const process = require('process');
 const semver = require('semver');
 const spawn = require('cross-spawn');
 // const tmp = require('tmp');
@@ -29,25 +30,76 @@ function isUsingYarn() {
   return (process.env.npm_config_user_agent || '').indexOf('yarn') === 0;
 }
 
-const projectName = 'testRun';
 const projectGitURL = 'https://github.com/Elysium-Labs-EU/juno-core';
 
+// function install({
+//   forkedRoot, yarnOrNPM, dependencies, verbose, isOnline,
+// }) {
+//   console.log('check it here', {
+//     forkedRoot,
+//     yarnOrNPM,
+//     dependencies,
+//     verbose,
+//     isOnline,
+//   });
+//   return new Promise((resolve, reject) => {
+//     process.chdir('../testRun');
+//     console.log(process.cwd());
+//     const installYarn = spawn('yarnpkg', 'add --cwd', { stdio: 'inherit' });
+//     installYarn.on('close', (code) => {
+//       if (code !== 0) {
+//         // eslint-disable-next-line prefer-promise-reject-errors
+//         reject({
+//           command: 'yarnpkg\', \'add --cwd',
+//         //   command: `${command} ${args.join(' ')}`,
+//         });
+//         return;
+//       }
+//       resolve();
+//     });
+//   });
+//   //   installYarn.stdout.on('data', (data) => {
+//   //     console.log(`${data}`);
+//   //   });
+
+//   //   installYarn.stderr.on('data', (data) => {
+//   //     console.log(`stderr: ${data}`);
+//   //   });
+//   //   const ls = spawn('ls', ['-la']);
+
+//   //   ls.stdout.on('data', (data) => {
+//   //     console.log(`stdout: ${data}`);
+//   //   });
+
+//   //   ls.stderr.on('data', (data) => {
+//   //     console.log(`stderr: ${data}`);
+//   //   });
+
+//   //   console.log('LS@@', ls);
+// }
+
 function install({
-  root, yarnOrNPM, dependencies, verbose, isOnline,
+  forkedRoot, yarnOrNPM, verbose, isOnline,
 }) {
+  console.log('check it here', {
+    forkedRoot,
+    yarnOrNPM,
+    verbose,
+    isOnline,
+  });
   return new Promise((resolve, reject) => {
     let command;
     let args;
     if (yarnOrNPM === 'yarn') {
       command = 'yarnpkg';
-      args = ['add', '--exact'];
+      args = ['--exact'];
       if (!isOnline) {
         args.push('--offline');
       }
       //   if (usePnp) {
       //     args.push('--enable-pnp');
       //   }
-      [].push.apply(args, dependencies);
+      [].push.apply(args);
 
       // Explicitly set cwd() to work around issues like
       // https://github.com/facebook/create-react-app/issues/3326.
@@ -55,7 +107,7 @@ function install({
       // equivalent --prefix flag doesn't help with this issue.
       // This is why for npm, we run checkThatNpmCanReadCwd() early instead.
       args.push('--cwd');
-      args.push(root);
+      args.push(forkedRoot);
 
       if (!isOnline) {
         console.log(chalk.yellow('You appear to be offline.'));
@@ -63,27 +115,31 @@ function install({
         console.log();
       }
     } else {
+      // To ensure we are in the correct directory, change it here.
+      process.chdir(forkedRoot);
       command = 'npm';
       args = [
         'install',
         '--no-audit', // https://github.com/facebook/create-react-app/issues/11174
         '--save',
-        '--save-exact',
+        '--legacy-peer-deps', // For now we support legacy dependencies
+        // '--save-exact',
         '--loglevel',
         'error',
-      ].concat(dependencies);
+      ];
 
-    //   if (usePnp) {
-    //     console.log(chalk.yellow("NPM doesn't support PnP."));
-    //     console.log(chalk.yellow('Falling back to the regular installs.'));
-    //     console.log();
-    //   }
+      //   if (usePnp) {
+      //     console.log(chalk.yellow("NPM doesn't support PnP."));
+      //     console.log(chalk.yellow('Falling back to the regular installs.'));
+      //     console.log();
+      //   }
     }
 
     if (verbose) {
       args.push('--verbose');
     }
 
+    console.log('args@@@', args);
     const child = spawn(command, args, { stdio: 'inherit' });
     child.on('close', (code) => {
       if (code !== 0) {
@@ -99,61 +155,63 @@ function install({
 }
 
 function run({
-  root,
-  appName,
-  version,
+  forkedRoot,
+  //   appName,
+  //   version,
   verbose,
-  originalDirectory,
+  //   originalDirectory,
   yarnOrNPM,
 }) {
-  console.log({
-    root,
-    appName,
-    version,
-    verbose,
-    originalDirectory,
-    yarnOrNPM,
-  });
+//   console.log('BOOP', {
+//     forkedRoot,
+//     appName,
+//     version,
+//     verbose,
+//     originalDirectory,
+//     yarnOrNPM,
+//   });
 
   const detectedOS = os.platform();
   if (detectedOS === 'win32') {
     // Windows uses different command types.
   }
-  //   fs.ensureDirSync(appName);
-  fs.readdir(root, (err) => {
-    console.log('we are here now');
 
-    install({
-      root,
-      yarnOrNPM,
-      dependencies: [],
-      verbose,
-      isOnline: true,
-    });
-    console.error(err);
+  //   fs.readdir(forkedRoot, (err) => {
+  //     console.log('we are here now');
+
+  //     // const targetPackageJson = JSON.parse(
+  //     //   fs.readFileSync(`${forkedRoot}/package.json`, {
+  //     //     encoding: 'utf8',
+  //     //     flag: 'r',
+  //     //   }),
+  //     // );
+  //     // console.log('targetPackageJson', targetPackageJson);
+  //     // const combinedObject = Object.assign(
+  //     //   targetPackageJson.dependencies,
+  //     //   targetPackageJson.devDependencies,
+  //     // );
+  //     // const listDependencies = [];
+  //     // for (const [key, value] of Object.entries(combinedObject)) {
+  //     //   console.log(`${key}: ${value}`);
+  //     //   listDependencies.push(`${key}: ${value}`);
+  //     // }
+  //     // console.log('listDependencies', listDependencies);
+
+  //     console.error(err);
+  //   });
+  console.log('Installing packages. This might take a couple of minutes.');
+  install({
+    forkedRoot,
+    yarnOrNPM,
+    packageJson,
+    verbose,
+    isOnline: true,
   });
-
-//   envinfo
-//     .run(
-//       {
-//         System: ['OS', 'CPU'],
-//         Binaries: ['Node', 'npm', 'Yarn'],
-//         // npmPackages: ['react', 'react-dom', 'react-scripts'],
-//       },
-//       {
-//         duplicates: true,
-//         showNotFound: true,
-//       },
-//     )
-//     .then((value) => {
-//       console.log(value.System);
-//       //   if(value.system)
-//     });
 }
 
-async function createEnv(name, verbose, version, template, useYarn, usePnp) {
-  const root = path.resolve(name);
-  const appName = path.basename(root);
+async function createEnv(verbose) {
+  const root = path.resolve();
+  //   const appName = path.basename(root);
 
   try {
     const response = await checkSetupVariables();
@@ -168,17 +226,17 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
     }
 
     // Cancel the installation flow if something is missing in the response.
-    // if (
-    //   response?.forkFolderLocation === undefined
-    //   || response?.cloudOrLocalVersion === undefined
-    //   || response?.yarnOrNPM === undefined
-    // ) {
-    //   console.log('Please restart installer, invalid answers detected.');
-    //   process.exit(1);
-    // }
+    if (
+      response?.forkFolderLocation === undefined
+      || response?.cloudOrLocalVersion === undefined
+      || response?.yarnOrNPM === undefined
+    ) {
+      console.log('Please restart installer, invalid answers detected.');
+      process.exit(1);
+    }
 
     // Create/check the folder here
-    fs.ensureDirSync(name);
+    fs.ensureDirSync(response.forkFolderLocation);
     // if (!isSafeToCreateProjectIn(root, name)) {
     //   process.exit(1);
     // }
@@ -187,6 +245,8 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
     console.log(
       `Configuring Juno dev environment in ${chalk.green(
         response.forkFolderLocation,
+      )} using ${chalk.green(
+        response.yarnOrNPM,
       )}.`,
     );
     console.log();
@@ -202,13 +262,13 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
     //   JSON.stringify(packageJson, null, 2) + os.EOL,
     // );
 
-    const originalDirectory = process.cwd();
+    // const originalDirectory = process.cwd();
     process.chdir(root);
-    if (!useYarn && !checkThatNpmCanReadCwd()) {
+    if (response.yarnOrNPM === 'npm' && !checkThatNpmCanReadCwd()) {
       process.exit(1);
     }
 
-    if (!useYarn) {
+    if (response.yarnOrNPM === 'npm') {
       const npmInfo = checkNpmVersion();
       if (!npmInfo.hasMinNpm) {
         if (npmInfo.npmVersion) {
@@ -220,7 +280,7 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
           );
         }
       }
-    } else if (usePnp) {
+    } else {
       const yarnInfo = checkYarnVersion();
       if (yarnInfo.yarnVersion) {
         if (!yarnInfo.hasMinYarnPnp) {
@@ -232,7 +292,7 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
           );
           // 1.11 had an issue with webpack-dev-middleware, so better not use PnP with it
           // (never reached stable, but still)
-          usePnp = false;
+          //   usePnp = false;
         }
         if (!yarnInfo.hasMaxYarnPnp) {
           console.log(
@@ -241,17 +301,22 @@ async function createEnv(name, verbose, version, template, useYarn, usePnp) {
             ),
           );
           // 2 supports PnP by default and breaks when trying to use the flag
-          usePnp = false;
+          //   usePnp = false;
         }
       }
     }
 
+    console.log('check it here1', `${root}`);
+    console.log('check it here2', `${root}${response.forkFolderLocation}`);
+
+    // TODO: Add Root here
     run({
-      root: response.forkFolderLocation,
-      appName,
+      forkedRoot: '/Users/r.tuerlings/Coding/testRun',
+      //   forkedRoot: `${root}/${response.forkFolderLocation}`,
+      //   appName,
       version: response.cloudOrLocalVersion,
       verbose,
-      originalDirectory,
+      //   originalDirectory,
       yarnOrNPM: response.yarnOrNPM,
     });
   } catch (err) {
@@ -287,7 +352,7 @@ function init() {
       );
       console.log(
         `      ${chalk.cyan(
-          'https://github.com/facebook/create-react-app/issues/new',
+          'https://github.com/Elysium-Labs-EU/create-juno-dev-env/issues/new',
         )}`,
       );
       console.log();
@@ -351,7 +416,6 @@ function init() {
       } else {
         const useYarn = isUsingYarn();
         createEnv(
-          projectName,
           program.verbose,
           program.scriptsVersion,
           program.template,
