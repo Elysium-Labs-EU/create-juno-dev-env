@@ -22,18 +22,18 @@
 		"node": ">=14"
 	},
 	"files": [
-		"checkForLatestVersion.js",
-		"checkIfOnline.js",
-		"checkNodeVersion.js",
-		"checkNpmVersion.js",
-		"checkSetupVariables.js",
-		"checkThatNpmCanReadCwd.js",
-		"checkYarnVersion.js",
 		"createJunoDevEnv.js",
-		"formatEnvToCliString.js",
-		"getProxy.js",
 		"index.js",
-		"isSafeToCreateProjectIn.js"
+		"utils/checkForLatestVersion.js",
+		"utils/checkIfOnline.js",
+		"utils/checkNodeVersion.js",
+		"utils/checkNpmVersion.js",
+		"utils/checkSetupVariables.js",
+		"utils/checkThatNpmCanReadCwd.js",
+		"utils/checkYarnVersion.js",
+		"utils/formatEnvToCliString.js",
+		"utils/getProxy.js",
+		"utils/isSafeToCreateProjectIn.js"
 	],
 	"scripts": {
 		"test": "node index.js",
