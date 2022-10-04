@@ -1,9 +1,11 @@
+'use-strict';
+
 const dns = require('dns');
 const url = require('url');
 const getProxy = require('./getProxy');
 
-function checkIfOnline(useYarn) {
-  if (!useYarn) {
+function checkIfOnline(yarnOrNPM) {
+  if (yarnOrNPM === 'npm') {
     // Don't ping the Yarn registry.
     // We'll just assume the best case.
     return Promise.resolve(true);
