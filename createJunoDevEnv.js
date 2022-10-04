@@ -129,7 +129,7 @@ async function run({
   }).then(() => {
     if (version === 'cloud') {
       const cloudEnv = {
-        REACT_APP_BACKEND_URL: 'https://juno-backend-service-dev.herokuapp.com',
+        VITE_BACKEND_URL: 'https://juno-backend-service-dev.herokuapp.com',
         VITE_USE_LOCAL_FRONTEND_CLOUD_BACKEND: true,
       };
       fs.writeFileSync(

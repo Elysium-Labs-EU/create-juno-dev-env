@@ -1,6 +1,6 @@
 {
 	"name": "create-juno-dev-env",
-	"version": "0.0.4-1",
+	"version": "0.0.4-2",
 	"description": "Setup your local Juno development environment",
 	"license": "MIT",
 	"main": "index.js",
