@@ -1,4 +1,6 @@
-const https = require('https')
+'use-strict';
+
+const https = require('https');
 
 function checkForLatestVersion() {
   return new Promise((resolve, reject) => {
@@ -7,21 +9,21 @@ function checkForLatestVersion() {
         'https://registry.npmjs.org/-/package/create-juno-dev-env/dist-tags',
         (res) => {
           if (res.statusCode === 200) {
-            let body = ''
+            let body = '';
             // eslint-disable-next-line no-return-assign
-            res.on('data', (data) => (body += data))
+            res.on('data', (data) => (body += data));
             res.on('end', () => {
-              resolve(JSON.parse(body).latest)
-            })
+              resolve(JSON.parse(body).latest);
+            });
           } else {
-            reject()
+            reject();
           }
-        }
+        },
       )
       .on('error', () => {
-        reject()
-      })
-  })
+        reject();
+      });
+  });
 }
 
-module.exports = { checkForLatestVersion }
+module.exports = { checkForLatestVersion };

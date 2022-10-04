@@ -1,17 +1,19 @@
-const { execSync } = require('child_process')
+'use-strict';
+
+const { execSync } = require('child_process');
 
 function getProxy() {
   if (process.env.https_proxy) {
-    return process.env.https_proxy
+    return process.env.https_proxy;
   }
   try {
     // Trying to read https-proxy from .npmrc
-    const httpsProxy = execSync('npm config get https-proxy').toString().trim()
-    return httpsProxy !== 'null' ? httpsProxy : undefined
+    const httpsProxy = execSync('npm config get https-proxy').toString().trim();
+    return httpsProxy !== 'null' ? httpsProxy : undefined;
   } catch (e) {
     // Ignore
-    return undefined
+    return undefined;
   }
 }
 
-module.exports = { getProxy }
+module.exports = { getProxy };

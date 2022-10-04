@@ -1,9 +1,10 @@
+'use-strict';
+
 const chalk = require('chalk');
 const spawn = require('cross-spawn');
 
 // See https://github.com/facebook/create-react-app/pull/3355
 function checkThatNpmCanReadCwd() {
-  console.log('RUNNING IT HERE @@@@');
   const cwd = process.cwd();
   let childOutput = null;
   try {

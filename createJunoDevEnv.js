@@ -1,28 +1,22 @@
-/* eslint-disable no-console */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable no-param-reassign */
+'use-strict';
+
+const { copyFile, constants, unlink } = require('node:fs');
 const chalk = require('chalk');
 const commander = require('commander');
-// const dns = require('dns');
 const envinfo = require('envinfo');
 const { execSync } = require('child_process');
 const fs = require('fs-extra');
-// const hyperquest = require('hyperquest');
-// const prompts = require('prompts');
-const os = require('os');
 const path = require('path');
 const process = require('process');
 const semver = require('semver');
 const spawn = require('cross-spawn');
-// const tmp = require('tmp');
-// const { unpack } = require('tar-pack');
-// const url = require('url');
-// const validateProjectName = require('validate-npm-package-name');
-const { checkSetupVariables } = require('./utils/checkSetupVariables');
 const { checkForLatestVersion } = require('./utils/checkForLatestVersion');
-const { checkThatNpmCanReadCwd } = require('./utils/checkThatNpmCanReadCwd');
+const { checkIfOnline } = require('./utils/checkIfOnline');
 const { checkNpmVersion } = require('./utils/checkNpmVersion');
+const { checkSetupVariables } = require('./utils/checkSetupVariables');
+const { checkThatNpmCanReadCwd } = require('./utils/checkThatNpmCanReadCwd');
 const { checkYarnVersion } = require('./utils/checkYarnVersion');
+const { formatEnvToCliString } = require('./utils/formatEnvToCliString');
 
 const packageJson = require('./package.json');
 
@@ -32,62 +26,20 @@ function isUsingYarn() {
 
 const projectGitURL = 'https://github.com/Elysium-Labs-EU/juno-core';
 
-// function install({
-//   forkedRoot, yarnOrNPM, dependencies, verbose, isOnline,
-// }) {
-//   console.log('check it here', {
-//     forkedRoot,
-//     yarnOrNPM,
-//     dependencies,
-//     verbose,
-//     isOnline,
-//   });
-//   return new Promise((resolve, reject) => {
-//     process.chdir('../testRun');
-//     console.log(process.cwd());
-//     const installYarn = spawn('yarnpkg', 'add --cwd', { stdio: 'inherit' });
-//     installYarn.on('close', (code) => {
-//       if (code !== 0) {
-//         // eslint-disable-next-line prefer-promise-reject-errors
-//         reject({
-//           command: 'yarnpkg\', \'add --cwd',
-//         //   command: `${command} ${args.join(' ')}`,
-//         });
-//         return;
-//       }
-//       resolve();
-//     });
-//   });
-//   //   installYarn.stdout.on('data', (data) => {
-//   //     console.log(`${data}`);
-//   //   });
-
-//   //   installYarn.stderr.on('data', (data) => {
-//   //     console.log(`stderr: ${data}`);
-//   //   });
-//   //   const ls = spawn('ls', ['-la']);
-
-//   //   ls.stdout.on('data', (data) => {
-//   //     console.log(`stdout: ${data}`);
-//   //   });
-
-//   //   ls.stderr.on('data', (data) => {
-//   //     console.log(`stderr: ${data}`);
-//   //   });
-
-//   //   console.log('LS@@', ls);
-// }
-
 function install({
   forkedRoot, yarnOrNPM, verbose, isOnline,
 }) {
-  console.log('check it here', {
-    forkedRoot,
-    yarnOrNPM,
-    verbose,
-    isOnline,
-  });
   return new Promise((resolve, reject) => {
+    unlink('package-lock.json', (err) => {
+      if (err) {
+        if (err.code !== 'ENOENT') {
+          throw err;
+        }
+        // Silently fail when not able to find the file
+        return;
+      }
+      console.log('package-lock.json was deleted');
+    });
     let command;
     let args;
     if (yarnOrNPM === 'yarn') {
@@ -117,6 +69,16 @@ function install({
     } else {
       // To ensure we are in the correct directory, change it here.
       process.chdir(forkedRoot);
+      unlink('yarn.lock', (err) => {
+        if (err) {
+          if (err.code !== 'ENOENT') {
+            throw err;
+          }
+          // Silently fail when not able to find the file
+          return;
+        }
+        console.log('yarn.lock was deleted');
+      });
       command = 'npm';
       args = [
         'install',
@@ -139,7 +101,6 @@ function install({
       args.push('--verbose');
     }
 
-    console.log('args@@@', args);
     const child = spawn(command, args, { stdio: 'inherit' });
     child.on('close', (code) => {
       if (code !== 0) {
@@ -154,68 +115,45 @@ function install({
   });
 }
 
-function run({
-  forkedRoot,
-  //   appName,
-  //   version,
-  verbose,
-  //   originalDirectory,
-  yarnOrNPM,
+async function run({
+  forkedRoot, version, verbose, yarnOrNPM,
 }) {
-//   console.log('BOOP', {
-//     forkedRoot,
-//     appName,
-//     version,
-//     verbose,
-//     originalDirectory,
-//     yarnOrNPM,
-//   });
-
-  const detectedOS = os.platform();
-  if (detectedOS === 'win32') {
-    // Windows uses different command types.
-  }
-
-  //   fs.readdir(forkedRoot, (err) => {
-  //     console.log('we are here now');
-
-  //     // const targetPackageJson = JSON.parse(
-  //     //   fs.readFileSync(`${forkedRoot}/package.json`, {
-  //     //     encoding: 'utf8',
-  //     //     flag: 'r',
-  //     //   }),
-  //     // );
-  //     // console.log('targetPackageJson', targetPackageJson);
-  //     // const combinedObject = Object.assign(
-  //     //   targetPackageJson.dependencies,
-  //     //   targetPackageJson.devDependencies,
-  //     // );
-  //     // const listDependencies = [];
-  //     // for (const [key, value] of Object.entries(combinedObject)) {
-  //     //   console.log(`${key}: ${value}`);
-  //     //   listDependencies.push(`${key}: ${value}`);
-  //     // }
-  //     // console.log('listDependencies', listDependencies);
-
-  //     console.error(err);
-  //   });
+  const isOnline = await checkIfOnline(yarnOrNPM);
   console.log('Installing packages. This might take a couple of minutes.');
   install({
     forkedRoot,
     yarnOrNPM,
     packageJson,
     verbose,
-    isOnline: true,
+    isOnline,
+  }).then(() => {
+    if (version === 'cloud') {
+      const cloudEnv = {
+        REACT_APP_BACKEND_URL: 'https://juno-backend-service-dev.herokuapp.com',
+        VITE_USE_LOCAL_FRONTEND_CLOUD_BACKEND: true,
+      };
+      fs.writeFileSync(
+        path.join(forkedRoot, '.env'),
+        formatEnvToCliString(cloudEnv),
+      );
+    } else {
+      const callback = (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('.env.example was copied to .env');
+      };
+      copyFile('.env.example', '.env', constants.COPYFILE_FICLONE, callback);
+    }
+    console.log('Done setting up Juno dev environment');
   });
 }
 
 async function createEnv(verbose) {
   const root = path.resolve();
-  //   const appName = path.basename(root);
 
   try {
     const response = await checkSetupVariables();
-    console.log('response', response);
     if (!response.userHasForked) {
       console.log(
         `Please fork the repository first and restart the installer - ${chalk.green(
@@ -235,34 +173,13 @@ async function createEnv(verbose) {
       process.exit(1);
     }
 
-    // Create/check the folder here
-    fs.ensureDirSync(response.forkFolderLocation);
-    // if (!isSafeToCreateProjectIn(root, name)) {
-    //   process.exit(1);
-    // }
-    // console.log();
-
     console.log(
       `Configuring Juno dev environment in ${chalk.green(
         response.forkFolderLocation,
-      )} using ${chalk.green(
-        response.yarnOrNPM,
-      )}.`,
+      )} using ${chalk.green(response.yarnOrNPM)}.`,
     );
     console.log();
 
-    //   eslint-disable-next-line no-shadow
-    // const packageJson = {
-    //   name: appName,
-    //   version: '0.1.0',
-    //   private: true,
-    // };
-    // fs.writeFileSync(
-    //   path.join(root, 'package.json'),
-    //   JSON.stringify(packageJson, null, 2) + os.EOL,
-    // );
-
-    // const originalDirectory = process.cwd();
     process.chdir(root);
     if (response.yarnOrNPM === 'npm' && !checkThatNpmCanReadCwd()) {
       process.exit(1);
@@ -306,17 +223,10 @@ async function createEnv(verbose) {
       }
     }
 
-    console.log('check it here1', `${root}`);
-    console.log('check it here2', `${root}${response.forkFolderLocation}`);
-
-    // TODO: Add Root here
     run({
-      forkedRoot: '/Users/r.tuerlings/Coding/testRun',
-      //   forkedRoot: `${root}/${response.forkFolderLocation}`,
-      //   appName,
+      forkedRoot: `${root}/${response.forkFolderLocation}`,
       version: response.cloudOrLocalVersion,
       verbose,
-      //   originalDirectory,
       yarnOrNPM: response.yarnOrNPM,
     });
   } catch (err) {
@@ -328,11 +238,6 @@ async function createEnv(verbose) {
 function init() {
   const program = new commander.Command(packageJson.name)
     .version(packageJson.version)
-    .arguments('<project-directory>')
-    .usage(`${chalk.green('<project-directory>')} [options]`)
-    // .action((name) => {
-    //   projectName = name;
-    // })
     .option('--verbose', 'print additional logs')
     .option('--info', 'print environment debug info')
     .option('--use-pnp')
@@ -398,7 +303,9 @@ function init() {
   checkForLatestVersion()
     .catch(() => {
       try {
-        return execSync('npm view create-react-app version').toString().trim();
+        return execSync('npm view create-juno-dev-env version')
+          .toString()
+          .trim();
       } catch (e) {
         return null;
       }

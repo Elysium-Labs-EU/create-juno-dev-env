@@ -1,3 +1,5 @@
+'use-strict';
+
 const { prompt } = require('prompts');
 const path = require('path');
 
@@ -17,9 +19,7 @@ async function checkSetupVariables() {
     {
       type: (prev) => (prev === true ? 'text' : null),
       name: 'forkFolderLocation',
-      // initial: root,
       message: `What is the fork folder location? ${root}/ ...`,
-      // format: (v) => `${root}/${v}`,
       validate: (v) => (!v.startsWith('/')
         ? true
         : 'Please enter folder location without starting /'),
@@ -54,6 +54,8 @@ async function checkSetupVariables() {
         {
           value: 'npm',
           title: 'NPM',
+          description:
+            'Juno uses yarn out of the box, usability of Juno with NPM is not guaranteed.',
         },
       ],
     },
