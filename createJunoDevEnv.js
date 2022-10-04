@@ -30,19 +30,19 @@ function install({
   forkedRoot, yarnOrNPM, verbose, isOnline,
 }) {
   return new Promise((resolve, reject) => {
-    unlink('package-lock.json', (err) => {
-      if (err) {
-        if (err.code !== 'ENOENT') {
-          throw err;
-        }
-        // Silently fail when not able to find the file
-        return;
-      }
-      console.log('package-lock.json was deleted');
-    });
     let command;
     let args;
     if (yarnOrNPM === 'yarn') {
+      unlink('package-lock.json', (err) => {
+        if (err) {
+          if (err.code !== 'ENOENT') {
+            throw err;
+          }
+          // Silently fail when not able to find the file
+          return;
+        }
+        console.log('package-lock.json was deleted');
+      });
       command = 'yarnpkg';
       args = ['--exact'];
       if (!isOnline) {
