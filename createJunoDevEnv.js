@@ -24,7 +24,7 @@ function isUsingYarn() {
   return (process.env.npm_config_user_agent || '').indexOf('yarn') === 0;
 }
 
-const projectGitURL = 'https://github.com/Elysium-Labs-EU/juno-core';
+const projectGitURLFork = 'https://github.com/Elysium-Labs-EU/juno-core/fork';
 
 function install({
   forkedRoot, yarnOrNPM, verbose, isOnline,
@@ -157,8 +157,8 @@ async function createEnv(verbose) {
     if (!response.userHasForked) {
       console.log(
         `Please fork the repository first and restart the installer - ${chalk.green(
-          projectGitURL,
-        )}.`,
+          projectGitURLFork,
+        )} .`,
       );
       process.exit(1);
     }
@@ -243,11 +243,9 @@ function init() {
     .option('--use-pnp')
     .allowUnknownOption()
     .on('--help', () => {
-      console.log(`Only ${chalk.green('<project-directory>')} is required.`);
-      console.log();
       console.log(
         `      - a local path relative to the current working directory: ${chalk.green(
-          'file:../my-react-scripts',
+          'file:../my-juno-scripts',
         )}`,
       );
       console.log();
@@ -283,8 +281,6 @@ function init() {
             'Firefox Developer Edition',
             'Safari',
           ],
-          npmPackages: ['react', 'react-dom', 'react-scripts'],
-          npmGlobalPackages: ['create-react-app'],
         },
         {
           duplicates: true,
